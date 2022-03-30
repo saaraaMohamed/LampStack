@@ -1,0 +1,80 @@
+---
+- name: install LAMP_STACK
+  hosts: prod
+  tasks:
+   - name: update system
+     yum:
+      name: '*'
+      state: latest 
+
+   - name: Install Apache
+     yum:
+      name: httpd
+      state: latest
+
+   - name: Start service httpd, if not started
+     ansible.builtin.service:
+      name: httpd
+      state: started
+
+   - name: Enable service httpd, and not touch the state
+     ansible.builtin.service:
+      name: httpd
+      enabled: yes
+   
+   - name: install mySQL
+     yum: 
+      name: mysql-server 
+      state: latest
+
+   - name: Start service mySQl, if not started
+     ansible.builtin.service:
+      name: mysqld
+      state: started
+
+   - name: Enable service mySQL, and not touch the state
+     ansible.builtin.service:
+      name: mysqld
+      enabled: yes
+
+   - name: install PHP
+     yum:
+      name: php
+      state: present  
+   
+   - name: Enable 80 port
+     ansible.posix.firewalld:
+      port: 80/tcp
+      permanent: yes
+      state: enabled
+
+   - name: Enable 443 port
+     ansible.posix.firewalld:
+      port: 443/tcp
+      permanent: yes
+      state: enabled
+
+
+   - name: Restart the firewalld service to load in the firewall changes
+     ansible.builtin.service:
+      name: firewalld
+      state: restarted
+
+   - name: Touch a HTML File
+     file:
+      path: /var/www/html/index.html
+      state: touch
+
+   - name: Insert/Update HTML surrounded by custom markers after <body> line
+     blockinfile:
+      path: /var/www/html/index.html
+      marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
+      insertafter: "<body>"
+      block: |
+       <h1>Welcome to sara server </h1>
+       <p>Last updated on {{ ansible_date_time.iso8601 }}</p>
+
+   - name: Check that you can connect (GET) to a page and it returns a status 200
+     uri:
+      url: http://192.168.10.26/index.html
+   
